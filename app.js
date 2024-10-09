@@ -2,12 +2,14 @@ const express = require('express');
 const admin = require('firebase-admin');
 const cors = require("cors");
 const bodyParser = require('body-parser');
+const { OAuth2Client } = require('google-auth-library'); // Import Google Auth Library
 require("dotenv").config();
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+// Initialize Firebase Admin SDK
 admin.initializeApp({
   credential: admin.credential.cert({
     "type": "service_account",
@@ -27,6 +29,9 @@ admin.initializeApp({
 
 const db = admin.firestore();
 const collectionName = "Nabeel"; // Replace with your collection name
+
+// Initialize Google Auth Client
+const oauth2Client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // 1. API to Add Data
 app.post('/add-data', async (req, res) => {
@@ -70,6 +75,7 @@ app.post('/check-data', async (req, res) => {
   }
 });
 
+// 3. API to Get All Data
 app.get('/get-data', async (req, res) => {
   try {
     const snapshot = await db.collection(collectionName).get();
@@ -85,13 +91,39 @@ app.get('/get-data', async (req, res) => {
 
     res.status(200).json(data);
   } catch (error) {
-    console.error('Error retrieving data:', error);
-    res.status(500).json({ error: 'Failed to retrieve data' });
+    console.error('Error getting data:', error);
+    res.status(500).json({ error: 'Failed to get data' });
+  }
+});
+
+// Middleware to verify Google OAuth Token
+async function verifyGoogleToken(token) {
+  const ticket = await oauth2Client.verifyIdToken({
+    idToken: token,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+  return ticket.getPayload();
+}
+
+// 4. API to Check Validity of Google Token
+app.post('/check-token', async (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ error: 'Token is required' });
+  }
+
+  try {
+    const payload = await verifyGoogleToken(token);
+    res.status(200).json({ valid: true, payload });
+  } catch (error) {
+    console.error('Error verifying token:', error);
+    res.status(401).json({ valid: false });
   }
 });
 
 // Start the server
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
