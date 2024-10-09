@@ -14,7 +14,7 @@ admin.initializeApp({
     type: "service_account",
     project_id: "nabeel-5d247",
     private_key_id: "69b02b8d7117e60f900a87587c33383d822488c2",
-    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'), // Use environment variable
+    private_key: process.env.FIREBASE_PRIVATE_KEY, // Use environment variable
     client_email: "firebase-adminsdk-o6ych@nabeel-5d247.iam.gserviceaccount.com",
     client_id: "112540963791518217449",
     auth_uri: "https://accounts.google.com/o/oauth2/auth",
